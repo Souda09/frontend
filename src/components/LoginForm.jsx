@@ -123,13 +123,11 @@
 import React, { useState } from 'react';
 import api from '../config/service.js';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom'; // Link aur navigate dono import kiye
+import { useNavigate, Link } from 'react-router-dom';
 
 const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    
-    // States for Status UI
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false); 
 
@@ -138,28 +136,36 @@ const LoginForm = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        
         setError('');
         setIsSubmitting(true); 
 
         try {
-            // API request hit ho rahi hai
             const response = await api.post('/login', { email, password });
+            
+            // Console mein check karne ke liye data print kiya:
+            console.log("Backend Response Data:", response.data);
 
             if (response.data.status === true) {
-                // 1. Token ko local storage mein save karna
-                if (response.data.token) {
-                    localStorage.setItem('token', response.data.token);
-                }
+                const userData = response.data.user;
+                const token = response.data.token;
 
-                // 2. Auth Context ke andar user state ko update karna
-                login(response.data.user);
+                // 1. Token aur User Object dono ko Local Storage mein daalna:
+                if (token) localStorage.setItem('token', token);
+                if (userData) localStorage.setItem('user', JSON.stringify(userData));
 
-                // 3. Role check karke sahi screen par redirect karna
-                if (response.data.user.role === 'admin') {
+                // Console mein check karein ke local storage set hua ya nahi:
+                console.log("LocalStorage Saved User:", JSON.parse(localStorage.getItem('user')));
+
+                // 2. Auth Context update karna
+                login(userData);
+
+                // 3. Role check karke redirect karna
+                if (userData && userData.role === 'admin') {
+                    console.log("Redirecting to Admin Dashboard... ✈️");
                     navigate('/admin-dashboard');
                 } else {
-                    navigate('/dashboard'); // Agar route change ho toh user dashboard ka sahi path de dein (e.g. '/dashboard/user')
+                    console.log("Redirecting to User Dashboard... ✈️");
+                    navigate('/dashboard'); 
                 }
             } else {
                 setError(response.data.message || 'Login failed');
@@ -176,11 +182,8 @@ const LoginForm = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
             <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-                    Welcome Back
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Welcome Back</h2>
                 
-                {/* Error Alert Message */}
                 {error && (
                     <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-md mb-4 text-center">
                         {error}
@@ -188,7 +191,6 @@ const LoginForm = () => {
                 )}
                 
                 <form onSubmit={handleLogin} className="space-y-5">
-                    {/* Email Input */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Email Address</label>
                         <input
@@ -201,7 +203,6 @@ const LoginForm = () => {
                         />
                     </div>
 
-                    {/* Password Input */}
                     <div>
                         <div className="flex justify-between items-center">
                             <label className="block text-sm font-medium text-gray-700">Password</label>
@@ -217,7 +218,6 @@ const LoginForm = () => {
                         />
                     </div>
 
-                    {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={isSubmitting} 
@@ -229,12 +229,9 @@ const LoginForm = () => {
                     </button>
                 </form>
 
-                {/* Redirect Link to Signup */}
                 <p className="mt-6 text-center text-sm text-gray-600">
                     Don't have an account? 
-                    <Link to="/signup" className="text-blue-600 font-medium hover:underline ml-1">
-                        Sign up
-                    </Link>
+                    <Link to="/signup" className="text-blue-600 font-medium hover:underline ml-1">Sign up</Link>
                 </p>
             </div>
         </div>
